@@ -2,16 +2,38 @@
 
 MaterialAnalyzer 是一个面向 UE 材质分析流程的插件提交包。它负责从 UE 侧提取材质图结构与基础属性，通过 Python 和 Web 分析流程生成结果，并在分析完成后把规则沉淀为可复用的正式 Skill 模块。
 
+当前建议支持范围：
+1. 当前版本仅按 Unreal Engine 5.6 环境开发与验证。
+2. 其他 UE 版本暂不做兼容保证。
+
 ## 1. 安装与首次使用
 
-首次接入建议按下面顺序执行：
+首次接入前先确认目标项目类型，再按对应流程处理。
 
-1. 关闭 Unreal Editor。
+### C++ 项目
+
+1. 确保在复制插件、生成工程文件、编译或执行环境脚本时，Unreal Editor 处于关闭状态。
 2. 将本目录复制到目标 UE 项目：`<YourUEProject>/Plugins/MaterialAnalyzer`
-3. 在插件目录执行 `setup_python_env.ps1`，让脚本自动定位 UE 自带 Python、创建 `.venv` 并安装依赖。
+3. 右键 `.uproject`，执行 Generate Visual Studio project files。
+4. 用 Visual Studio 打开工程并编译 `Development Editor`，先完成 C++ 插件编译。
+5. 确认插件已能随工程正常加载后，关闭 Unreal Editor。
+6. 在插件目录执行 `setup_python_env.ps1`，让脚本自动定位 UE 自带 Python、创建 `.venv` 并安装依赖。
+7. 再次启动 UE，确认插件和 Python 侧功能均已启用。
+
+### 蓝图项目
+
+当前提交包默认提供的是源码插件，不附带项目侧可直接复用的预编译产物。纯蓝图项目需要先具备 C++ 编译能力，再编译插件。
+
+1. 如果项目还是纯蓝图项目，先不要复制本插件，先打开原项目并添加一个空的 C++ 类，把项目转换为可编译工程。
+2. 等 UE 为项目生成 C++ 工程骨架后，关闭 Unreal Editor。
+3. 将本目录复制到目标 UE 项目：`<YourUEProject>/Plugins/MaterialAnalyzer`
 4. 右键 `.uproject`，执行 Generate Visual Studio project files。
-5. 用 Visual Studio 打开工程并编译 `Development Editor`。
-6. 启动 UE，确认插件已启用。
+5. 用 Visual Studio 打开工程并编译 `Development Editor`，先完成宿主工程和插件的首次编译。
+6. 编译通过并确认插件可正常加载后，关闭 Unreal Editor。
+7. 在插件目录执行 `setup_python_env.ps1`，让脚本自动定位 UE 自带 Python、创建 `.venv` 并安装依赖。
+8. 再次启动 UE，确认插件和 Python 侧功能均已启用。
+
+无论是哪种项目，都建议在插件编译完成后，再执行下面的环境配置命令。
 
 PowerShell：
 `./setup_python_env.ps1`
