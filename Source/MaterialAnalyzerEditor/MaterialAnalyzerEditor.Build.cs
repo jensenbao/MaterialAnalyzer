@@ -22,7 +22,10 @@ public class MaterialAnalyzerEditor : ModuleRules
                 "Json",
                 "JsonUtilities",
                 "MaterialEditor",
-                "AssetRegistry"
+                "AssetRegistry",
+                "ToolMenus",
+                "Slate",
+                "SlateCore"
             }
         );
     }

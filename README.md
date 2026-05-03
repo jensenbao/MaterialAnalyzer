@@ -1,10 +1,26 @@
 # MaterialAnalyzer 插件说明
 
-MaterialAnalyzer 是一个面向 UE 材质分析流程的插件提交包。它负责从 UE 侧提取材质图结构与基础属性，通过 Python 和 Web 分析流程生成结果，并在分析完成后把规则沉淀为可复用的正式 Skill 模块。
+MaterialAnalyzer 是一个面向 Unreal Editor 的材质分析插件。它负责从 UE 侧提取材质图结构与基础属性，通过本地 Python / Web 分析流程展示结果，并在分析完成后把规则沉淀为可复用的 Skill 模块。
 
 当前建议支持范围：
 1. 当前版本仅按 Unreal Engine 5.6 环境开发与验证。
-2. 其他 UE 版本暂不做兼容保证。
+2. 当前环境脚本仅按 Windows 设备编写与验证。
+3. 其他 UE 版本暂不做兼容保证。
+
+## 0. 安装前提
+
+在其他设备接入本插件前，请先确认下面几项：
+
+1. 目标机器是 Windows。
+2. 已安装 Unreal Engine 5.6，且安装版或源码版引擎中包含 `Engine/Binaries/ThirdParty/Python3/Win64/python.exe`。
+3. 宿主项目具备 C++ 编译能力；如果是纯蓝图项目，需要先转成可编译工程。
+4. 目标机器可以正常创建 Python 虚拟环境，并能通过 pip 下载依赖。
+5. Unreal Editor 侧需要启用 Python 相关能力；如果目标环境关闭了 PythonScriptPlugin，插件的 Web / Python 工作流将无法正常启动。
+6. 首次执行环境安装时，建议目标机器可以访问外网 Python 包源。
+
+补充说明：
+1. 本插件是 Editor-only 工具插件，不是运行时游戏插件。
+2. 当前提交包附带的是源码插件，不包含可直接复用的预编译二进制。
 
 ## 1. 安装与首次使用
 
@@ -41,11 +57,31 @@ PowerShell：
 CMD：
 `setup_python_env.bat`
 
+推荐顺序：
+1. 先完成宿主工程和插件编译。
+2. 关闭 Unreal Editor。
+3. 再运行 `setup_python_env.ps1` 或 `setup_python_env.bat`。
+4. 环境安装完成后重新打开 UE。
+
 脚本行为：
-1. 自动定位 UE 内置 Python。
-2. 在 `Plugins/MaterialAnalyzer/Content/Python/.venv` 创建虚拟环境。
-3. 安装 `requirements_streamlit.txt` 中的依赖并做导入校验。
-4. 完成后再次打开 UE，启动阶段只检查环境，不再安装依赖。
+1. 自动检查当前项目对应的 Unreal Editor 是否正在运行；如果正在运行，则拒绝继续，避免虚拟环境和进程占用冲突。
+2. 自动定位 UE 内置 Python；优先使用显式传入的 `-EngineRoot`，其次尝试项目 EngineAssociation、注册表、环境变量和常见安装目录扫描。
+3. 在 `Plugins/MaterialAnalyzer/Content/Python/.venv` 创建或重建虚拟环境。
+4. 安装 `requirements_streamlit.txt` 中的依赖并做导入校验。
+5. 完成后再次打开 UE；插件启动阶段只检查环境与 bridge，不再在启动时安装依赖。
+
+脚本入口说明：
+1. `setup_python_env.ps1` 是主入口，包含完整逻辑。
+2. `setup_python_env.bat` 只是对 `setup_python_env.ps1` 的一层 CMD 包装，便于在没有直接使用 PowerShell 的情况下调用。
+
+可选参数：
+1. 当脚本无法自动识别引擎位置时，可执行：`./setup_python_env.ps1 -EngineRoot '<UE_ROOT_PATH>'`
+
+其他设备可复用性说明：
+1. 这两个脚本可以直接随插件一起复制到其他 Windows 设备使用。
+2. 前提是目标设备满足本 README 第 0 节中的环境条件。
+3. 如果目标机器没有外网或 pip 源不可用，脚本本身仍然能执行，但依赖安装会失败。
+4. 如果目标机器上的 UE 安装位置未写入注册表，也不在脚本扫描范围内，请用 `-EngineRoot` 显式指定。
 
 ## 2. Python 与 Web 侧脚本
 
@@ -61,6 +97,7 @@ CMD：
 1. 日常维护以插件目录版本为准，便于跨项目复用与分发。
 2. 插件不在 UE 启动时自动安装依赖，避免首次启动卡住编辑器。
 3. `init_unreal.py` 会作为插件启动入口，执行 Python 侧初始化逻辑。
+4. 当前进入 UE 后不会再弹出“是否打开 Web”对话框；如需打开 Web，请在编辑器菜单中使用 `Window > Material Analyzer`。
 
 ## 3. Skill 模块导出
 
@@ -155,3 +192,18 @@ CMD：
 
 3. 返回节点数为 0
 原因：材质表达式可能主要位于函数或实例链中，后续需要补函数展开与实例追溯。
+
+4. `setup_python_env.ps1` 提示找不到 Unreal Engine python.exe
+原因：目标机器上的 UE 安装路径未被脚本自动识别。
+处理：使用 `-EngineRoot` 参数显式传入引擎根目录。
+
+5. 环境脚本在其他设备执行失败
+原因通常是以下几类之一：
+1. Unreal Editor 没有关闭。
+2. 目标机器没有可用的 UE 内置 Python。
+3. pip 无法访问依赖源。
+4. 目标项目本身还没有 C++ 编译能力。
+
+6. 菜单里能看到 `Window > Material Analyzer`，但打开后 Web 没起来
+原因：本地 bridge 或 Streamlit 依赖未完成安装，或目标机器上的 Python / 网络环境异常。
+处理：先重新执行 `setup_python_env.ps1`，再重启 UE。
